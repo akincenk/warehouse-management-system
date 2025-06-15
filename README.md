@@ -1,14 +1,19 @@
-# Warehouse Management System
+# Warehouse Management System (CRUD Enabled)
 
-This is a basic warehouse management system built with FastAPI and SQLAlchemy.
+A warehouse management API built with FastAPI and SQLAlchemy, supporting real-time database persistence with CRUD operations.
 
 ## Features
-- User and role management
-- Product inventory
-- API endpoints for CRUD operations
+- FastAPI backend
+- SQLite database via SQLAlchemy
+- Create and fetch users and products
+- Clean modular structure
+- ORM-based model definitions
 
-## How to run
+## Setup
+
 ```bash
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
+
+Then open your browser at: http://127.0.0.1:8000/docs
