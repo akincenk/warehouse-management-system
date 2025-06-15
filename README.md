@@ -96,10 +96,7 @@ Cenk Akın – github.com/akincenk
 
 This project is licensed under the MIT License – feel free to use, fork, or contribute!
 
-
-
-
-
+**********
 
 # Warehouse Management System with JWT
 
