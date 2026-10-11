@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { API_URL } from "../api";
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -7,10 +8,8 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:8000/auth/login", {
-        username,
-        password
-      });
+      // OAuth2 password flow: the backend expects form-encoded credentials.
+      const res = await axios.post(`${API_URL}/auth/login`, new URLSearchParams({ username, password }));
       localStorage.setItem("token", res.data.access_token);
       window.location.href = "/dashboard";
     } catch (err) {

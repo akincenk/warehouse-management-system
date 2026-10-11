@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { API_URL } from "../api";
 
 function Dashboard() {
   const [products, setProducts] = useState([]);
@@ -10,13 +11,16 @@ function Dashboard() {
     if (!token) {
       window.location.href = "/";
     } else {
-      axios.get("http://localhost:8000/products/", {
+      axios.get(`${API_URL}/products/`, {
         headers: { Authorization: `Bearer ${token}` }
-      }).then(res => setProducts(res.data));
+      }).then(res => setProducts(res.data)).catch(() => {
+        localStorage.removeItem("token");
+        window.location.href = "/";
+      });
 
-      axios.get("http://localhost:8000/users/", {
+      axios.get(`${API_URL}/users/`, {
         headers: { Authorization: `Bearer ${token}` }
-      }).then(res => setUsers(res.data)).catch(() => {});
+      }).then(res => setUsers(res.data)).catch(() => {}); // admin-only endpoint
     }
   }, [token]);
 
