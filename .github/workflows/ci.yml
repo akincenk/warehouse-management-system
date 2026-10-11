@@ -27,3 +27,11 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
+      - name: Audit dependencies for known vulnerabilities
+        run: pip install pip-audit && pip-audit -r requirements.txt -r requirements-dev.txt
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t warehouse-api backend
