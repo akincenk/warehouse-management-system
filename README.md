@@ -1,113 +1,114 @@
-# 🏭 Warehouse Management System – Fullstack (FastAPI + React)
+# Warehouse Management System
 
-A full-featured warehouse management system with secure JWT authentication, built using **FastAPI** for the backend and **React** for the frontend.
+[![CI](https://github.com/akincenk/warehouse-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/akincenk/warehouse-management-system/actions/workflows/ci.yml)
 
----
+A small inventory app: a FastAPI + SQLAlchemy REST API with JWT authentication and role-based access, plus a minimal React login/dashboard client.
 
-## 🚀 Features
+## What it does
 
-- 🔐 JWT-based user authentication (login/register)
-- 🧑‍💼 Role-based access: admin, manager, staff
-- 📦 Product management with real CRUD operations
-- 👥 User list for admins
-- ⚡ Swagger interactive API docs
-- 💻 React frontend dashboard
-- 🌐 Axios-based API calls
-- 🗃 SQLite database with SQLAlchemy ORM
+- Users register (always as `staff`) and log in with the OAuth2 password flow to get a short-lived JWT.
+- Authenticated users can create, list, view and update products (name + quantity).
+- Only `admin` and `manager` users can delete products.
+- Only `admin` users can list users and change a user's role (`admin`, `manager`, `staff`).
+- The first admin is created from the command line (`create_admin.py`), not through the public API.
 
----
+## Stack
 
-## 📁 Project Structure
+- **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2, Pydantic 2, PyJWT, bcrypt. SQLite by default (any SQLAlchemy URL via `DATABASE_URL`).
+- **Frontend:** React 18 (Create React App), React Router, Axios.
+- **Tooling:** pytest, ruff, GitHub Actions.
 
-warehouse-management-fullstack/
-├── backend/    # FastAPI backend (Python)
-└── frontend/   # React frontend (JavaScript)
+```
+backend/
+  main.py            app, CORS, router wiring
+  database.py        engine/session from DATABASE_URL
+  models.py          User, Product
+  schemas.py         Pydantic request/response models
+  auth/security.py   bcrypt hashing, JWT issue/verify, role checks
+  auth/auth_routes.py  /auth/register, /auth/login, /auth/me
+  routes/            /products, /users
+  create_admin.py    CLI to create or promote an admin
+  tests/
+frontend/
+  src/components/    Login, Dashboard
+```
 
----
+## Quickstart
 
-## 🛠️ Installation & Startup Guide
-
-### 🔧 Backend (FastAPI + JWT)
+### Backend
 
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --reload
-
-Then visit Swagger UI:
-👉 http://127.0.0.1:8000/docs
-
-
-💻 Frontend (React)
-
-cd frontend
-npm install
-npm start
-
-View app in browser:
-👉 http://localhost:3000
-
-👤 Test Credentials (for local use)
-
-You must register a user before login using Swagger:
-
-🔹 POST /auth/register
-
-{
-  "username": "admin",
-  "password": "admin123",
-  "role": "admin"
-}
-
-Then login with:
-	•	Username: admin
-	•	Password: admin123
-
-Already registered? Try different username or delete db file to reset.
-
-📦 Technologies Used
-
-Layer Tech
-Backend FastAPI, Python, JWT
-Frontend React, JavaScript, Axios
-Auth Python-JOSE JWT tokens
-Database SQLite + SQLAlchemy ORM
-Styling Tailwind CSS / basic UI
-
-🌍 Deployment Ready
-
-You can deploy this app using:
-	•	🔷 Render.com (backend)
-	•	🔶 Railway.app
-	•	⚛️ Vercel.com (frontend)
-
-📸 Screenshots
-
-Add screenshots here for login page, dashboard, product view, etc.
-
-🙋 About the Author
-
-Cenk Akın – github.com/akincenk
-🇨🇦 Vancouver-based fullstack developer. Passionate about FastAPI, React, and elegant software design.
-
-📘 License
-
-This project is licensed under the MIT License – feel free to use, fork, or contribute!
-
-# Warehouse Management System with JWT
-A secure warehouse management API built with FastAPI, SQLAlchemy, and JWT-based authentication.
-## Features
-- FastAPI backend
-- JWT authentication (login/register)
-- User roles: admin, staff, manager
-- Product and user CRUD (protected)
-- SQLite database
-- Modular project structure
-## Setup
-```bash
-pip install -r requirements.txt
+cp .env.example .env   # then set JWT_SECRET
+export $(grep -v '^#' .env | xargs)
+python create_admin.py admin        # prompts for a password (8+ chars)
 uvicorn main:app --reload
 ```
-Then go to: http://127.0.0.1:8000/docs
+
+Generate a secret with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. The app refuses to start without a `JWT_SECRET` of at least 32 characters.
+
+Interactive API docs: http://127.0.0.1:8000/docs (use the **Authorize** button with your username/password).
+
+### Frontend
+
+Requires Node 18+.
+
+```bash
+cd frontend
+npm install
+npm start            # http://localhost:3000
+```
+
+The client calls `http://localhost:8000` by default; override with `REACT_APP_API_URL`. The backend allows the origins listed in `CORS_ORIGINS` (default `http://localhost:3000`).
+
+## Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `JWT_SECRET` | none (required) | HMAC key for signing tokens |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Token lifetime |
+| `DATABASE_URL` | `sqlite:///./warehouse.db` | SQLAlchemy URL |
+| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed origins |
+
+## API overview
+
+| Method | Path | Access |
+| --- | --- | --- |
+| POST | `/auth/register` | public (creates `staff`) |
+| POST | `/auth/login` | public, form fields `username`, `password` |
+| GET | `/auth/me` | any user |
+| GET / POST | `/products/` | any user |
+| GET / PATCH | `/products/{id}` | any user |
+| DELETE | `/products/{id}` | admin, manager |
+| GET | `/users/` | admin |
+| PATCH | `/users/{id}/role` | admin, body `{"role": "manager"}` |
+
+## Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+ruff check . && pytest
+```
+
+Tests use a temporary SQLite database and cover registration, hashing, login, expired/forged tokens, role checks, product CRUD, validation, CORS and the admin CLI. CI runs them on Python 3.11 and 3.12.
+
+## Security notes
+
+- Passwords are hashed with bcrypt (passwords over 72 bytes are rejected instead of silently truncated).
+- Tokens are HS256 JWTs with an expiry; the signing key only comes from the environment.
+- Public registration cannot choose a role.
+- CORS is restricted to configured origins and does not allow credentials (the token travels in the `Authorization` header).
+
+## Limitations / next steps
+
+- Tables are created with `create_all` on startup; there are no Alembic migrations.
+- No refresh tokens or token revocation; the frontend stores the token in `localStorage`.
+- Products only have a name and a quantity: no locations, SKUs, stock movements or audit history.
+- The React client is a bare login page and a read-only dashboard, has no tests, and is not built in CI.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
