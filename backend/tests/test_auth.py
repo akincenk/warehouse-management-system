@@ -64,3 +64,30 @@ def test_expired_token_rejected(client, staff):
 def test_token_signed_with_other_key_rejected(client, staff):
     forged = jwt.encode({"sub": "staff1"}, "another-secret-" + "y" * 32, algorithm="HS256")
     assert client.get("/auth/me", headers={"Authorization": f"Bearer {forged}"}).status_code == 401
+
+
+def _token(claims: dict) -> str:
+    return jwt.encode(claims, security.SECRET_KEY, algorithm=security.ALGORITHM)
+
+
+def test_token_without_exp_rejected(client, staff):
+    assert client.get("/auth/me", headers={"Authorization": f"Bearer {_token({'sub': 'staff1'})}"}).status_code == 401
+
+
+def test_token_without_sub_rejected(client, staff):
+    exp = datetime.now(UTC) + timedelta(minutes=5)
+    assert client.get("/auth/me", headers={"Authorization": f"Bearer {_token({'exp': exp})}"}).status_code == 401
+
+
+def test_unknown_user_still_runs_bcrypt(client, monkeypatch):
+    # Timing equalization: an unknown username must still cost one bcrypt check.
+    checked = []
+    real = security.verify_password
+
+    def spy(password, hashed):
+        checked.append(hashed)
+        return real(password, hashed)
+
+    monkeypatch.setattr("auth.auth_routes.verify_password", spy)
+    assert client.post("/auth/login", data={"username": "ghost", "password": "password123"}).status_code == 401
+    assert checked == [security.DUMMY_HASH]

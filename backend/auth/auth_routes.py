@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from auth.security import create_access_token, get_current_user, hash_password, verify_password
+from auth.security import DUMMY_HASH, create_access_token, get_current_user, hash_password, verify_password
 from database import get_db
 from models import User
 from schemas import Token, UserCreate, UserOut
@@ -28,7 +28,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == form.username).first()
-    if not db_user or not verify_password(form.password, db_user.password):
+    valid = verify_password(form.password, db_user.password if db_user else DUMMY_HASH)
+    if not (db_user and valid):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",

@@ -18,6 +18,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+# Checked when the username does not exist, so a failed login takes about as
+# long whether or not the user is registered (no username enumeration by timing).
+DUMMY_HASH = bcrypt.hashpw(b"dummy-password", bcrypt.gensalt()).decode()
+
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -42,10 +46,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"require": ["exp", "sub"]})
     except jwt.PyJWTError:
         raise unauthorized from None
-    user = db.query(User).filter(User.username == payload.get("sub")).first()
+    user = db.query(User).filter(User.username == payload["sub"]).first()
     if user is None:
         raise unauthorized
     return user

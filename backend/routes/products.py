@@ -8,6 +8,9 @@ from schemas import ProductCreate, ProductOut, ProductUpdate
 
 router = APIRouter()
 
+# staff: read-only; manager and admin: create, update, delete.
+can_edit = require_role("admin", "manager")
+
 
 def _get_or_404(db: Session, product_id: int) -> Product:
     product = db.get(Product, product_id)
@@ -17,7 +20,7 @@ def _get_or_404(db: Session, product_id: int) -> Product:
 
 
 @router.post("/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
-def create_product(product: ProductCreate, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def create_product(product: ProductCreate, db: Session = Depends(get_db), _: User = Depends(can_edit)):
     db_product = Product(**product.model_dump())
     db.add(db_product)
     db.commit()
@@ -36,9 +39,7 @@ def get_product(product_id: int, db: Session = Depends(get_db), _: User = Depend
 
 
 @router.patch("/{product_id}", response_model=ProductOut)
-def update_product(
-    product_id: int, changes: ProductUpdate, db: Session = Depends(get_db), _: User = Depends(get_current_user)
-):
+def update_product(product_id: int, changes: ProductUpdate, db: Session = Depends(get_db), _: User = Depends(can_edit)):
     product = _get_or_404(db, product_id)
     for field, value in changes.model_dump(exclude_unset=True, exclude_none=True).items():
         setattr(product, field, value)
@@ -48,6 +49,6 @@ def update_product(
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(require_role("admin", "manager"))):
+def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(can_edit)):
     db.delete(_get_or_404(db, product_id))
     db.commit()
