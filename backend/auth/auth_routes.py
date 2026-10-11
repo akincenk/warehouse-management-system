@@ -1,38 +1,42 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from database import SessionLocal
+
+from auth.security import create_access_token, get_current_user, hash_password, verify_password
+from database import get_db
 from models import User
-from schemas import UserCreate, UserLogin
-from auth.jwt_handler import create_access_token, get_current_user
-from passlib.context import CryptContext
+from schemas import Token, UserCreate, UserOut
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
-@router.post("/register")
+@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    hashed = pwd_context.hash(user.password)
-    db_user = User(username=user.username, password=hashed, role=user.role)
+    # Self-registration always creates "staff"; admins are created with create_admin.py.
+    db_user = User(username=user.username, password=hash_password(user.password), role="staff")
     db.add(db_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken") from None
     db.refresh(db_user)
-    return {"msg": "User registered successfully."}
+    return db_user
 
-@router.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if not db_user or not pwd_context.verify(user.password, db_user.password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_access_token(data={"sub": db_user.username})
-    return {"access_token": token, "token_type": "bearer"}
 
-@router.get("/me")
+@router.post("/login", response_model=Token)
+def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.username == form.username).first()
+    if not db_user or not verify_password(form.password, db_user.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return Token(access_token=create_access_token(db_user.username))
+
+
+@router.get("/me", response_model=UserOut)
 def get_me(current_user: User = Depends(get_current_user)):
-    return {"username": current_user.username, "role": current_user.role}
+    return current_user

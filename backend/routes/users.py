@@ -1,19 +1,30 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from database import SessionLocal
+
+from auth.security import require_role
+from database import get_db
 from models import User
-from schemas import UserOut
-from auth.jwt_handler import get_current_user
+from schemas import Role, UserOut
 
 router = APIRouter()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.get("/", response_model=list[UserOut])
-def get_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(User).all()
+def list_users(db: Session = Depends(get_db), _: User = Depends(require_role("admin"))):
+    return db.query(User).order_by(User.id).all()
+
+
+@router.patch("/{user_id}/role", response_model=UserOut)
+def set_role(
+    user_id: int,
+    role: Role = Body(embed=True),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_role("admin")),
+):
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user.role = role
+    db.commit()
+    db.refresh(user)
+    return user
