@@ -12,7 +12,8 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Warehouse Management System API")
 
 # Bearer tokens are sent in a header, so credentials (cookies) are not needed.
-origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
+DEFAULT_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000"
+origins = [o.strip() for o in os.getenv("CORS_ORIGINS", DEFAULT_ORIGINS).split(",") if o.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"])
 
 app.include_router(auth_routes.router, prefix="/auth", tags=["Authentication"])

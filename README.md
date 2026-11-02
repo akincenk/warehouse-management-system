@@ -73,10 +73,10 @@ Requires Node 20.19+ or 22.12+.
 ```bash
 cd frontend
 npm install
-npm start            # http://localhost:3000
+npm start            # http://127.0.0.1:3000
 ```
 
-The client calls `http://localhost:8000` by default; override with `VITE_API_URL` (read at build time). The backend allows the origins listed in `CORS_ORIGINS` (default `http://localhost:3000`).
+The client calls `http://localhost:8000` by default; override with `VITE_API_URL` (read at build time). The backend allows the origins listed in `CORS_ORIGINS` (default `http://localhost:3000` and `http://127.0.0.1:3000`).
 
 ## Configuration
 
@@ -85,7 +85,7 @@ The client calls `http://localhost:8000` by default; override with `VITE_API_URL
 | `JWT_SECRET` | none (required) | HMAC key for signing tokens |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Token lifetime |
 | `DATABASE_URL` | `sqlite:///./warehouse.db` | SQLAlchemy URL |
-| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed origins |
+| `CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Comma-separated allowed origins |
 
 ## API overview
 
