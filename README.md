@@ -19,7 +19,7 @@ A small inventory app: a FastAPI + SQLAlchemy REST API with JWT authentication a
 ## Stack
 
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2, Pydantic 2, PyJWT, bcrypt. SQLite by default (any SQLAlchemy URL via `DATABASE_URL`).
-- **Frontend:** React 18 (Create React App), React Router, Axios.
+- **Frontend:** React 19 (Vite), React Router, Axios.
 - **Tooling:** pytest, ruff, pip-audit, Docker, GitHub Actions, Dependabot.
 
 ```
@@ -68,7 +68,7 @@ Interactive API docs: http://127.0.0.1:8000/docs (use the **Authorize** button w
 
 ### Frontend
 
-Requires Node 18+.
+Requires Node 20.19+ or 22.12+.
 
 ```bash
 cd frontend
@@ -76,7 +76,7 @@ npm install
 npm start            # http://localhost:3000
 ```
 
-The client calls `http://localhost:8000` by default; override with `REACT_APP_API_URL`. The backend allows the origins listed in `CORS_ORIGINS` (default `http://localhost:3000`).
+The client calls `http://localhost:8000` by default; override with `VITE_API_URL` (read at build time). The backend allows the origins listed in `CORS_ORIGINS` (default `http://localhost:3000`).
 
 ## Configuration
 
