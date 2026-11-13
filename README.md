@@ -1,8 +1,12 @@
 # Warehouse Management System
 
-[![CI](https://github.com/akincenk/warehouse-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/akincenk/warehouse-management-system/actions/workflows/ci.yml)
+[![CI](https://github.com/akincenk/Warehouse-Management-System/actions/workflows/ci.yml/badge.svg)](https://github.com/akincenk/Warehouse-Management-System/actions/workflows/ci.yml)
 
 A small inventory app: a FastAPI + SQLAlchemy REST API with JWT authentication and role-based access, plus a minimal React login/dashboard client.
+
+It is for small teams (a stockroom, a shop, a workshop) where several people need to see stock but only a few should
+change it: staff can look things up, managers edit products, an admin manages who is who. Planned work is in
+[ROADMAP.md](ROADMAP.md) and the issue tracker.
 
 ## What it does
 
@@ -132,7 +136,9 @@ Tests use a temporary SQLite database and cover registration, hashing, login, ex
 - Tables are created with `create_all` on startup; there are no Alembic migrations.
 - No refresh tokens, token revocation or login rate limiting; the frontend stores the token in `localStorage`.
 - Products only have a name and a quantity: no locations, SKUs, stock movements or audit history.
-- The React client is a bare login page and a read-only dashboard, has no tests, and is not built in CI.
+- The React client is a bare login page and a read-only dashboard and has no tests (CI only builds it).
+
+Fixing these is the plan; see [ROADMAP.md](ROADMAP.md).
 
 ## License
 
